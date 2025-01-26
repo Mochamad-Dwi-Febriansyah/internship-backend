@@ -2,17 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LaporanHarian;
 use App\Models\Presensi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class PresensiController extends Controller
 {
+    public function index(){
+        try {
+            $userId = Auth::guard('sanctum')->user()->id;
+            $presensi = Presensi::where('user_id', $userId)->with('laporanHarians')->get(); 
+            return response()->json([
+                'message' => 'Data user berhasil diambil',
+                'data' => $presensi
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $th->getMessage()
+            ], 500);
+        }  
+    }
     public function presensi(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'berkas_id' => 'required|uuid|exists:berkas,id',
             'tanggal' => 'required|date|date_format:Y-m-d', 
             'waktu_check_in' => 'required|date_format:H:i:s', 
             'waktu_check_out' => 'required|date_format:H:i:s', 
@@ -42,7 +60,11 @@ class PresensiController extends Controller
             $fotoCheckOutPath = 'presensi/' . $fotoCheckOut->getClientOriginalName();
             Storage::put($fotoCheckOutPath, file_get_contents($fotoCheckOut->getRealPath()));
 
-            $presensi = Presensi::create([
+            $userId = Auth::guard('sanctum')->user()->id;
+
+            Presensi::create([
+                'user_id' => $userId,
+                'berkas_id' =>  $request->berkas_id,
                 'tanggal' => $request->tanggal,
                 'waktu_check_in' => $request->waktu_check_in,
                 'waktu_check_out' => $request->waktu_check_out,
@@ -59,7 +81,6 @@ class PresensiController extends Controller
             DB::commit();
             return response()->json([
                 'message' => 'Presensi berhasil',
-                'data' => $presensi
             ], 201);
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -70,5 +91,50 @@ class PresensiController extends Controller
             ], 500);
         }
       
+    }
+
+    public function laporan(Request $request){
+        $validator = Validator::make($request->all(), [
+            'presensi_id' => 'required|uuid|exists:presensis,id',
+            'judul' => 'required', 
+            'laporan' => 'required', 
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',  
+        ]);
+
+        if($validator->fails()) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try { 
+            $fotoLaporan = $request->file('foto');
+            $fotoLaporanPath = 'laporan/' . $fotoLaporan->getClientOriginalName();
+            Storage::put($fotoLaporanPath, file_get_contents($fotoLaporan->getRealPath()));
+
+            LaporanHarian::create([
+                'user_id' => Auth::guard('sanctum')->user()->id,
+                'presensi_id' => $request->presensi_id,
+                'judul' => $request->judul, 
+                'laporan' => $request->laporan, 
+                'foto' => $fotoLaporanPath,  
+            ]);
+    
+          
+    
+            DB::commit();
+            return response()->json([
+                'message' => 'Laporan berhasil disimpan',
+            ], 201);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menyimpan laporan',
+                'error' => $th->getMessage()
+            ], 500);
+        }
     }
 }
