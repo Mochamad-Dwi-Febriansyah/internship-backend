@@ -5,9 +5,9 @@ use App\Http\Controllers\BerkasController;
 use App\Http\Controllers\LaporanAkhirController;
 use App\Http\Controllers\MasterSekolahUniversitasController;
 use App\Http\Controllers\PresensiController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserController; 
 use App\Models\LaporanAkhir;
-use App\Models\MasterSekolahUniversitas;
+use App\Models\MasterSekolahUniversitas;  
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -34,7 +34,7 @@ Route::prefix('v1')->group(function () {
  
 
         // admin side 
-
+ 
         //user side
     }); 
 
@@ -47,11 +47,30 @@ Route::prefix('v1')->group(function () {
 
                 Route::resource('/laporanakhir', LaporanAkhirController::class);
             });
+ 
+            Route::post('/logout', 'logout')->middleware('cekToken');
+ 
+        });
+ 
+
+        // admin side 
+
+        //user side
+    }); 
+
+    Route::middleware('cekToken')->group(function(){
+        Route::middleware('isUser')->group(function(){
+            Route::controller(PresensiController::class)->group(function(){
+                Route::get('/presensi', 'index');
+                Route::post('/presensi', 'presensi');
+                Route::post('/laporan', 'laporan');
+            });
         });
 
         Route::middleware('isAdmin')->group(function(){
             Route::resource('users', UserController::class); 
-            Route::resource('master', MasterSekolahUniversitasController::class); 
+ 
+            Route::resource('master', MasterSekolahUniversitasController::class);  
         });
     }); 
 
