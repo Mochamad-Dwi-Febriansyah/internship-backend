@@ -26,7 +26,7 @@ Route::prefix('v1')->group(function () {
         Route::controller(AuthController::class)->group(function(){ 
             Route::post('/login', 'login'); 
 
-            // edit profile
+            // edit profiles
             Route::put('/profile/{uuid_user}', 'profile')->middleware('cekToken');
  
             Route::post('/logout', 'logout')->middleware('cekToken');
