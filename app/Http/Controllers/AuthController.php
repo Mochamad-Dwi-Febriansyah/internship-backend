@@ -21,6 +21,7 @@ class AuthController extends Controller
 
         if($validator->fails()){
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validasi gagal',
                 'error' => $validator->errors()
             ],422);
@@ -29,17 +30,20 @@ class AuthController extends Controller
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password, 'status' => 'inactive'])) {
             $token = $request->user()->createToken('myAppToken')->plainTextToken;
             return response()->json([
+                'status' => 'success',
                 'message' => 'Login berhasil',
                 'token' => $token
             ], 200); 
         }
 
         return response()->json([
+            'status' => 'error',
             'message' => 'Login gagal',
             'error' => 'Email atau password salah'
         ], 401);
     } catch (\Throwable $th) {
         return response()->json([
+            'status' => 'error',
             'message' => 'Terjadi kesalahan saat memperbarui data',
             'error' => $th->getMessage()
         ], 500);
@@ -68,14 +72,15 @@ class AuthController extends Controller
 
             DB::commit(); 
             if ($user) {
-                return response()->json(['message' => 'Data user berhasil diperbarui']);
+                return response()->json(['status' => 'success','message' => 'Data user berhasil diperbarui']);
             } else {
-                return response()->json(['message' => 'User tidak ditemukan'], 404);
+                return response()->json(['status' => 'error','message' => 'User tidak ditemukan'], 404);
             }
         } catch (\Throwable $th) {
             DB::rollBack();
 
             return response()->json([
+                'status' => 'error',
                 'message' => 'Terjadi kesalahan saat memperbarui data',
                 'error' => $th->getMessage()
             ], 500);
@@ -89,10 +94,12 @@ class AuthController extends Controller
         $user->currentAccessToken()->delete(); // merah tapi bisa 
 
         return response()->json([
+            'status' => 'success',
             'message' => 'Logout berhasil'
         ]);
     } catch (\Throwable $th) {
         return response()->json([
+            'status' => 'error',
             'message' => 'Terjadi kesalahan saat memperbarui data',
             'error' => $th->getMessage()
         ], 500);

@@ -34,6 +34,7 @@ class BerkasController extends Controller
 
         if($userValidator->fails()) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validasi gagal',
                 'errors' => $userValidator->errors()
             ], 422);
@@ -54,6 +55,7 @@ class BerkasController extends Controller
 
         if ($sekolahValidator->fails()) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validasi gagal pada data Master Sekolah/Universitas',
                 'errors' => $sekolahValidator->errors()
             ], 422);
@@ -71,6 +73,7 @@ class BerkasController extends Controller
 
         if ($berkasValidator->fails()) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validasi gagal pada berkas',
                 'errors' => $berkasValidator->errors()
             ], 422);
@@ -81,12 +84,13 @@ class BerkasController extends Controller
         try {
             
             $masterSekolah = MasterSekolahUniversitas::firstOrCreate(
-                ['email_sekolah_universitas' => $request->email_sekolah_universitas],
+                ['email_sekolah_universitas' => $request->email_sekolah_universitas,
+                'jurusan_sekolah' => $request->jurusan_sekolah,
+                'fakultas_universitas' => $request->fakultas_universitas,
+                'program_studi_universitas' => $request->program_studi_universitas,
+                ], 
                 $request->only([
                     'nama_sekolah_universitas',
-                    'jurusan_sekolah',
-                    'fakultas_universitas',
-                    'program_studi_universitas',
                     'alamat_sekolah_universitas',
                     'kabupaten_kota_sekolah_universitas',
                     'provinsi_sekolah_universitas',
@@ -150,6 +154,7 @@ class BerkasController extends Controller
             DB::commit();
     
             return response()->json([
+                'status' => 'success',
                 'message' => 'Berhasil menambahkan data',
                 'data' => [
                     'user' => $user,
@@ -162,6 +167,7 @@ class BerkasController extends Controller
             DB::rollBack();
 
             return response()->json([
+                'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menyimpan data',
                 'error' => $th->getMessage()
             ], 500);
@@ -173,6 +179,7 @@ class BerkasController extends Controller
         try {
             if (!preg_match('/^BERKAS-\d{8}-[A-Z0-9]+$/', $nomor_registrasi)) {
                 return response()->json([
+                    'status' => 'error',
                     'message' => 'Format nomor registrasi tidak valid'
                 ], 400);
             }
@@ -191,15 +198,18 @@ class BerkasController extends Controller
 
             if (!$berkas) {
                 return response()->json([
+                    'status' => 'error',
                     'message' => 'Data tidak ditemukan'
                 ], 404);
             } 
             return response()->json([
+                'status' => 'success',
                 'message' => 'Data ditemukan',
                 'data' => $berkas
             ]);
         } catch (\Throwable $th) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Terjadi kesalahan saat mendapatkan data',
                 'error' => $th->getMessage()
             ], 500);
