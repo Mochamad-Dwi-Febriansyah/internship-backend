@@ -16,12 +16,14 @@ class PresensiController extends Controller
         try {
             $userId = Auth::guard('sanctum')->user()->id;
             $presensi = Presensi::where('user_id', $userId)->with('laporanHarians')->get(); 
-            return response()->json([
+            return response()->json([ 
+                'status' => 'success', 
                 'message' => 'Data user berhasil diambil',
                 'data' => $presensi
             ], 200);
         } catch (\Throwable $th) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat mengambil data',
                 'error' => $th->getMessage()
             ], 500);
@@ -44,6 +46,7 @@ class PresensiController extends Controller
 
         if($validator->fails()) {
             return response()->json([
+                'status' => 'error',
                 'message' => 'Validasi gagal',
                 'errors' => $validator->errors()
             ], 422);
@@ -80,12 +83,14 @@ class PresensiController extends Controller
     
             DB::commit();
             return response()->json([
+                'status' => 'success',
                 'message' => 'Presensi berhasil',
             ], 201);
         } catch (\Throwable $th) {
             DB::rollBack();
 
             return response()->json([
+                'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menyimpan presensi',
                 'error' => $th->getMessage()
             ], 500);
@@ -102,7 +107,8 @@ class PresensiController extends Controller
         ]);
 
         if($validator->fails()) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Validasi gagal',
                 'errors' => $validator->errors()
             ], 422);
@@ -125,13 +131,15 @@ class PresensiController extends Controller
           
     
             DB::commit();
-            return response()->json([
+            return response()->json([ 
+                'status' => 'success', 
                 'message' => 'Laporan berhasil disimpan',
             ], 201);
         } catch (\Throwable $th) {
             DB::rollBack();
 
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat menyimpan laporan',
                 'error' => $th->getMessage()
             ], 500);

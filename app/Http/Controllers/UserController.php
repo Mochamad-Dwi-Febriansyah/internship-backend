@@ -18,12 +18,14 @@ class UserController extends Controller
     {
         try {
             $users = User::where('role', 'user')->get();
-            return response()->json([
+            return response()->json([ 
+                'status' => 'success', 
                 'message' => 'Data user berhasil diambil',
                 'data' => $users
             ], 200);
         } catch (\Throwable $th) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat mengambil data',
                 'error' => $th->getMessage()
             ], 500);
@@ -60,7 +62,8 @@ class UserController extends Controller
             
         ]); 
         if($userValidator->fails()) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Validasi gagal',
                 'errors' => $userValidator->errors()
             ], 422);
@@ -85,13 +88,15 @@ class UserController extends Controller
             ]);
             DB::commit();
     
-            return response()->json([
+            return response()->json([ 
+                'status' => 'success', 
                 'message' => 'Berhasil menambahkan data user',
             ], 201);
         } catch (\Throwable $th) {
             DB::rollBack();
 
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat menyimpan data',
                 'error' => $th->getMessage()
             ], 500);
@@ -107,16 +112,19 @@ class UserController extends Controller
         try {
             $user = User::find($id);
             if (!$user) {
-                return response()->json([
+                return response()->json([ 
+                    'status' => 'error', 
                     'message' => 'User tidak ditemukan'
                 ], 404);  // Kode status 404, karena data tidak ditemukan
             }
-            return response()->json([
+            return response()->json([ 
+                'status' => 'success', 
                 'message' => 'Data user berhasil diambil',
                 'data' => $user
             ], 200);
         } catch (\Throwable $th) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat mengambil data',
                 'error' => $th->getMessage()
             ], 500);
@@ -138,7 +146,8 @@ class UserController extends Controller
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'User tidak ditemukan'
             ], 404);  // Kode status 404, karena data tidak ditemukan
         }
@@ -160,7 +169,8 @@ class UserController extends Controller
             
         ]); 
         if($userValidator->fails()) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Validasi gagal',
                 'errors' => $userValidator->errors()
             ], 422);
@@ -185,13 +195,17 @@ class UserController extends Controller
             ]);
             DB::commit();
     
-            return response()->json([
+            return response()->json([ 
+                'status' => 'success',
                 'message' => 'Berhasil mengupdate data user', 
-            ], 204);
+            ], 201); 
+                'message' => 'Berhasil mengupdate data user', 
+            ], 204); 
         } catch (\Throwable $th) {
             DB::rollBack();
 
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat mengupdate data',
                 'error' => $th->getMessage()
             ], 500);
@@ -206,16 +220,19 @@ class UserController extends Controller
         try {
             $user = User::find($id);
             if (!$user) {
-                return response()->json([
+                return response()->json([ 
+                    'status' => 'error', 
                     'message' => 'User tidak ditemukan'
                 ], 404);  // Kode status 404, karena data tidak ditemukan
             }
             $user->delete(); 
-        return response()->json([
+        return response()->json([ 
+            'status' => 'success', 
             'message' => 'Data user berhasil dihapus',  // Mengganti 'diambil' dengan 'dihapus'
         ], 200);
         } catch (\Throwable $th) {
-            return response()->json([
+            return response()->json([ 
+                'status' => 'error', 
                 'message' => 'Terjadi kesalahan saat menghapus data',
                 'error' => $th->getMessage()
             ], 500);
