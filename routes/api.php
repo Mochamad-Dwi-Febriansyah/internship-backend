@@ -27,7 +27,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/login', 'login'); 
 
             // edit profiles
-            Route::put('/profile/{uuid_user}', 'profile')->middleware('cekToken');
+            Route::put('/profile/{id}', 'profile')->middleware('cekToken');
  
             Route::post('/logout', 'logout')->middleware('cekToken');
         });

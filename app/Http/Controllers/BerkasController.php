@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
+use function App\Providers\logActivity;
+
 class BerkasController extends Controller
 {
     public function ajuanBerkas(Request $request)
@@ -99,6 +101,7 @@ class BerkasController extends Controller
                     'email_sekolah_universitas',
                 ])
             );
+            logActivity(null, null, 'create', 'MasterSekolahUniversitas', $masterSekolah->id, null);
     
             $user = User::create([
                 'nisn_npm_nim' => $request->nisn_npm_nim,
@@ -115,6 +118,7 @@ class BerkasController extends Controller
                 'kode_pos' => $request->kode_pos,
                 'role' => $request->role
             ]);
+            logActivity(null, null, 'create', 'User', $user->id, null);
             // dd($user);
 
              // Menyimpan file berkas ke storage menggunakan Storage::put
@@ -150,6 +154,8 @@ class BerkasController extends Controller
                  'tanggal_selesai' => $request->tanggal_selesai,
              ]);
  
+             
+            logActivity(null, null, 'create', 'Berkas', $berkas->id, null);
 
             DB::commit();
     

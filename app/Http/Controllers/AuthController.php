@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
- 
+use Illuminate\Validation\Rule;
+
+use function App\Providers\logActivity;
+
 class AuthController extends Controller
 {
    public function login(Request $request)
@@ -51,11 +54,43 @@ class AuthController extends Controller
        
    }
 
-   public function profile(Request $request, $uuid_user)
+   public function profile(Request $request, $id)
    {
         DB::beginTransaction();
         try {
-            $user = User::where('id', $uuid_user)->update([
+            $user = User::find($id);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User tidak ditemukan'
+                ], 404);  // Kode status 404, karena data tidak ditemukan
+            }
+            // dd($user);
+            $oldData = $user->toArray();
+            $userValidator = Validator::make($request->all(), [
+                'nisn_npm_nim' => 'max:20',
+                'tanggal_lahir' => 'required|date',
+                'nama_depan' => 'required',
+                'nama_belakang' => 'nullable',
+                'jenis_kelamin' => 'required|in:male,female',
+                'nomor_hp' => 'required',Rule::unique('users')->ignore($user->id),'regex:/^\+?[\d\s\(\)-]+$/',
+                'email' => 'required|email',Rule::unique('users')->ignore($user->id),
+                'password' => 'nullable',
+                'alamat' => 'required',
+                'kabupaten_kota' => 'required',
+                'provinsi' => 'required',
+                'kode_pos' => 'required',
+                'role' => 'required|in:admin,user',  
+                
+            ]); 
+            if($userValidator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal',
+                    'errors' => $userValidator->errors()
+                ], 422);
+            } 
+            $user->update([
                 'nisn_npm_nim' => $request->nisn_npm_nim,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'nama_depan' => $request->nama_depan,
@@ -69,7 +104,13 @@ class AuthController extends Controller
                 'provinsi' => $request->provinsi,
                 'kode_pos' => $request->kode_pos,
             ]);
+            $newData = $user->toArray();
+            $nama = $user->namadepan . ' ' . $user->nama_belakang;
 
+            logActivity($user->id, $nama, 'update', 'User', $user->id, [
+                'old' => $oldData,
+                'new' => $newData,
+            ]);
             DB::commit(); 
             if ($user) {
                 return response()->json(['status' => 'success','message' => 'Data user berhasil diperbarui']);
