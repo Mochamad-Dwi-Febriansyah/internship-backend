@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\MasterSekolahUniversitas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+
+use function App\Providers\logActivity;
 
 class MasterSekolahUniversitasController extends Controller
 {
@@ -67,7 +70,7 @@ class MasterSekolahUniversitasController extends Controller
 
         DB::beginTransaction();
         try {
-            MasterSekolahUniversitas::firstOrCreate(
+            $master = MasterSekolahUniversitas::firstOrCreate(
                 ['email_sekolah_universitas' => $request->email_sekolah_universitas,
                 'jurusan_sekolah' => $request->jurusan_sekolah,
                 'fakultas_universitas' => $request->fakultas_universitas,
@@ -83,6 +86,11 @@ class MasterSekolahUniversitasController extends Controller
                     'email_sekolah_universitas',
                 ])
             );
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+ 
+            logActivity($user->id, $nama, 'update', 'Master', $master->id, null);
+            
             DB::commit();
     
             return response()->json([
@@ -140,14 +148,14 @@ class MasterSekolahUniversitasController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $user = MasterSekolahUniversitas::find($id);
-        if (!$user) {
+        $master = MasterSekolahUniversitas::find($id);
+        if (!$master) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'User tidak ditemukan'
+                'message' => 'Master tidak ditemukan'
             ], 404);  // Kode status 404, karena data tidak ditemukan
         }
-        // dd($user);
+        $oldData = $master->toArray();
         $masterValidator = Validator::make($request->all(), [
             'nama_sekolah_universitas' => 'required|max:100',
             'jurusan_sekolah' => 'nullable|max:100',
@@ -171,20 +179,28 @@ class MasterSekolahUniversitasController extends Controller
 
         DB::beginTransaction();
         try {
-            MasterSekolahUniversitas::where([
-                ['id', $id],
-                ['email_sekolah_universitas', '=', $request->email_sekolah_universitas],
-                ['jurusan_sekolah', '=', $request->jurusan_sekolah],
-                ['fakultas_universitas', '=', $request->fakultas_universitas],
-                ['program_studi_universitas', '=', $request->program_studi_universitas],
-            ])->update([
+           $master->update([
+                'email_sekolah_universitas' => $request->email_sekolah_universitas,
+                'jurusan_sekolah' => $request->jurusan_sekolah,
+                'fakultas_universitas' => $request->fakultas_universitas,
+                'program_studi_universitas' => $request->program_studi_universitas,
                 'nama_sekolah_universitas' => $request->nama_sekolah_universitas,
                 'alamat_sekolah_universitas' => $request->alamat_sekolah_universitas,
                 'kabupaten_kota_sekolah_universitas' => $request->kabupaten_kota_sekolah_universitas,
                 'provinsi_sekolah_universitas' => $request->provinsi_sekolah_universitas,
                 'kode_pos_sekolah_universitas' => $request->kode_pos_sekolah_universitas,
                 'nomor_telp_sekolah_universitas' => $request->nomor_telp_sekolah_universitas,
-            ]);
+            ]); 
+            $newData = $master->toArray(); 
+
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+ 
+             logActivity($user->id, $nama, 'update', 'Master', $master->id, [
+                 'old' => $oldData,
+                 'new' => $newData,
+             ]);
+
             DB::commit();
     
             return response()->json([
@@ -215,7 +231,15 @@ class MasterSekolahUniversitasController extends Controller
                     'message' => 'master tidak ditemukan'
                 ], 404);
             }
+            $oldData = $master->toArray(); 
             $master->delete(); 
+
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'delete', 'MasterSekolahUniversitas', $user->id, [
+                'old' => $oldData,
+            ]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Data master berhasil dihapus', 

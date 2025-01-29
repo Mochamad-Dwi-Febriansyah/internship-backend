@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
+use function App\Providers\logActivity;
+
 class PresensiController extends Controller
 {
     public function index(){
@@ -63,10 +65,10 @@ class PresensiController extends Controller
             $fotoCheckOutPath = 'presensi/' . $fotoCheckOut->getClientOriginalName();
             Storage::put($fotoCheckOutPath, file_get_contents($fotoCheckOut->getRealPath()));
 
-            $userId = Auth::guard('sanctum')->user()->id;
+            $user = Auth::guard('sanctum')->user()->id;
 
-            Presensi::create([
-                'user_id' => $userId,
+            $presensi = Presensi::create([
+                'user_id' => $user->id,
                 'berkas_id' =>  $request->berkas_id,
                 'tanggal' => $request->tanggal,
                 'waktu_check_in' => $request->waktu_check_in,
@@ -79,7 +81,8 @@ class PresensiController extends Controller
                 'status' => $request->status
             ]);
     
-          
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'create', 'Presensi', $presensi->id, null);
     
             DB::commit();
             return response()->json([
@@ -117,15 +120,18 @@ class PresensiController extends Controller
             $fotoLaporanPath = 'laporan/' . $fotoLaporan->getClientOriginalName();
             Storage::put($fotoLaporanPath, file_get_contents($fotoLaporan->getRealPath()));
 
-            LaporanHarian::create([
-                'user_id' => Auth::guard('sanctum')->user()->id,
+            $user = Auth::guard('sanctum')->user();
+
+            $laporan = LaporanHarian::create([
+                'user_id' => $user->id,
                 'presensi_id' => $request->presensi_id,
                 'judul' => $request->judul, 
                 'laporan' => $request->laporan, 
                 'foto' => $fotoLaporanPath,  
             ]);
     
-          
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'create', 'LaporanHarian', $laporan->id, null);
     
             DB::commit();
             return response()->json([

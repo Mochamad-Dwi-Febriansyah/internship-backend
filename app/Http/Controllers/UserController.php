@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+
+use function App\Providers\logActivity;
 
 class UserController extends Controller
 {
@@ -71,7 +74,7 @@ class UserController extends Controller
 
         DB::beginTransaction();
         try {
-            User::create([
+            $userCreate = User::create([
                 'nisn_npm_nim' => $request->nisn_npm_nim,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'nama_depan' => $request->nama_depan,
@@ -86,6 +89,10 @@ class UserController extends Controller
                 'kode_pos' => $request->kode_pos,
                 'role' => $request->role
             ]);
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'create', 'User', $userCreate->id, null);
+
             DB::commit();
     
             return response()->json([
@@ -151,6 +158,7 @@ class UserController extends Controller
                 'message' => 'User tidak ditemukan'
             ], 404);  // Kode status 404, karena data tidak ditemukan
         }
+        $oldData = $user->toArray();
         // dd($user);
         $userValidator = Validator::make($request->all(), [
             'nisn_npm_nim' => 'max:20',
@@ -178,7 +186,7 @@ class UserController extends Controller
 
         DB::beginTransaction();
         try {
-            User::where('id', $id)->update([
+            $user->update([
                 'nisn_npm_nim' => $request->nisn_npm_nim,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'nama_depan' => $request->nama_depan,
@@ -192,6 +200,13 @@ class UserController extends Controller
                 'provinsi' => $request->provinsi,
                 'kode_pos' => $request->kode_pos,
                 'role' => $request->role
+            ]);
+            $newData = $user->toArray();
+            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+
+            logActivity($user->id, $nama, 'update', 'User', $user->id, [
+                'old' => $oldData,
+                'new' => $newData,
             ]);
             DB::commit();
     
@@ -224,6 +239,15 @@ class UserController extends Controller
                 ], 404);  // Kode status 404, karena data tidak ditemukan
             }
             $user->delete(); 
+
+            $oldData = $user->toArray();
+            $user->delete();
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'delete', 'User', $user->id, [
+                'old' => $oldData,
+            ]);
+            
         return response()->json([
             'status' => 'success',
             'message' => 'Data user berhasil dihapus',  // Mengganti 'diambil' dengan 'dihapus'

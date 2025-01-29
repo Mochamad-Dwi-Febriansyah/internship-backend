@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
+use function App\Providers\logActivity;
+
 class LaporanAkhirController extends Controller
 {
     /**
@@ -18,8 +20,9 @@ class LaporanAkhirController extends Controller
     public function index()
     {
         try {
+
             $userId = Auth::guard('sanctum')->user()->id;
-            $laporanAkhir = LaporanAkhir::where('user_id', $userId)->get(); 
+            $laporanAkhir = LaporanAkhir::where('user_id', $userId)->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data user berhasil diambil',
@@ -31,7 +34,7 @@ class LaporanAkhirController extends Controller
                 'message' => 'Terjadi kesalahan saat mengambil data',
                 'error' => $th->getMessage()
             ], 500);
-        }  
+        }
     }
 
     /**
@@ -48,25 +51,24 @@ class LaporanAkhirController extends Controller
     public function store(Request $request)
     {
         $laporanAkhirValidator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid|exists:users,id',
             'berkas_id' => 'required|uuid|exists:berkas,id',
             'master_sekolah_universitas_id' => 'required|uuid|exists:master_sekolah_universitas,id',
-            'judul' => 'required', 
-            'laporan' => 'required', 
-            'file_laporan' => 'nullable|mimes:pdf,doc,docx|max:2048', 
-            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',  
-            'video' => 'nullable|string',  
-            
-        ]); 
-        if($laporanAkhirValidator->fails()) {
+            'judul' => 'required',
+            'laporan' => 'required',
+            'file_laporan' => 'nullable|mimes:pdf,doc,docx|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+            'video' => 'nullable|string',
+
+        ]);
+        if ($laporanAkhirValidator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
                 'errors' => $laporanAkhirValidator->errors()
             ], 422);
-        } 
+        }
 
-        
+
         DB::beginTransaction();
         try {
             $fileLaporanPath = null;
@@ -75,18 +77,25 @@ class LaporanAkhirController extends Controller
                 $fileLaporanPath = 'file_laporan/' . $fileLaporan->getClientOriginalName();
                 Storage::put($fileLaporanPath, file_get_contents($fileLaporan->getRealPath()));
             };
-            LaporanAkhir::create([
-                'user_id' => $request->user_id,
+            $user = Auth::guard('sanctum')->user();
+
+            $laporanAkhir = LaporanAkhir::create([
+                'user_id' => $user->id,
                 'berkas_id' => $request->berkas_id,
-                'master_sekolah_universitas_id' => $request->master_sekolah_universitas_id ,
-                'judul' => $request->judul ,
-                'laporan' => $request->laporan ,
+                'master_sekolah_universitas_id' => $request->master_sekolah_universitas_id,
+                'judul' => $request->judul,
+                'laporan' => $request->laporan,
                 'file_laporan' => $fileLaporanPath,
-                'foto' => $request->foto ,
-                'video' => $request->video ,
+                'foto' => $request->foto,
+                'video' => $request->video,
             ]);
+            
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'create', 'LaporanAkhir', $laporanAkhir->id, null);
+
+
             DB::commit();
-    
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Berhasil menambahkan data laporan akhir',
@@ -126,7 +135,7 @@ class LaporanAkhirController extends Controller
                 'message' => 'Terjadi kesalahan saat mengambil data',
                 'error' => $th->getMessage()
             ], 500);
-        } 
+        }
     }
 
     /**
@@ -149,25 +158,24 @@ class LaporanAkhirController extends Controller
                 'message' => 'laporan akhir tidak ditemukan'
             ], 404);  // Kode status 404, karena data tidak ditemukan
         }
-        // dd($laporanAKhir);
+        $oldData = $laporanAkhir->toArray();
         $laporanAkhirValidator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid|exists:users,id',
             'berkas_id' => 'required|uuid|exists:berkas,id',
             'master_sekolah_universitas_id' => 'required|uuid|exists:master_sekolah_universitas,id',
-            'judul' => 'required', 
-            'laporan' => 'required', 
-            'file_laporan' => 'nullable|mimes:pdf,doc,docx|max:2048', 
-            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',  
-            'video' => 'nullable|string',  
-            
-        ]); 
-        if($laporanAkhirValidator->fails()) {
+            'judul' => 'required',
+            'laporan' => 'required',
+            'file_laporan' => 'nullable|mimes:pdf,doc,docx|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+            'video' => 'nullable|string',
+
+        ]);
+        if ($laporanAkhirValidator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal',
                 'errors' => $laporanAkhirValidator->errors()
             ], 422);
-        } 
+        }
 
         DB::beginTransaction();
         try {
@@ -176,22 +184,34 @@ class LaporanAkhirController extends Controller
                 $fileLaporan = $request->file('file_laporan');
                 $fileLaporanPath = 'file_laporan/' . $fileLaporan->getClientOriginalName();
                 Storage::put($fileLaporanPath, file_get_contents($fileLaporan->getRealPath()));
-            }; 
-            LaporanAkhir::where('id', $id)->update([
-                'user_id' => $request->user_id,
+            };
+
+            $user = Auth::guard('sanctum')->user(); 
+
+            $laporanAkhir->update([
+                'user_id' => $user->id,
                 'berkas_id' => $request->berkas_id,
-                'master_sekolah_universitas_id' => $request->master_sekolah_universitas_id ,
-                'judul' => $request->judul ,
-                'laporan' => $request->laporan ,
+                'master_sekolah_universitas_id' => $request->master_sekolah_universitas_id,
+                'judul' => $request->judul,
+                'laporan' => $request->laporan,
                 'file_laporan' => $fileLaporanPath,
-                'foto' => $request->foto ,
-                'video' => $request->video ,
+                'foto' => $request->foto,
+                'video' => $request->video,
             ]);
+
+            $newData = $laporanAkhir->toArray();
+            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+
+            logActivity($user->id, $nama, 'update', 'LaporanAkhir', $laporanAkhir->id, [
+                'old' => $oldData,
+                'new' => $newData,
+            ]);
+
             DB::commit();
-    
+
             return response()->json([
                 'status' => 'success',
-                'message' => 'Berhasil mengupdate data laporan akhir', 
+                'message' => 'Berhasil mengupdate data laporan akhir',
             ], 201);
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -217,18 +237,23 @@ class LaporanAkhirController extends Controller
                     'message' => 'laporan akhir tidak ditemukan'
                 ], 404);  // Kode status 404, karena data tidak ditemukan
             }
-            $laporanAkhir->delete(); 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Data laporan akhir berhasil dihapus',  // Mengganti 'diambil' dengan 'dihapus'
-        ], 200);
+            $oldData = $laporanAkhir->toArray();
+            $laporanAkhir->delete();
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            logActivity($user->id, $nama, 'delete', 'LaporanAkhir', $laporanAkhir->id, [
+                'old' => $oldData,
+            ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data laporan akhir berhasil dihapus',  // Mengganti 'diambil' dengan 'dihapus'
+            ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat menghapus data',
                 'error' => $th->getMessage()
             ], 500);
-        } 
-  
+        }
     }
 }
