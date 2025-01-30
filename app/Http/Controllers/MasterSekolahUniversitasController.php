@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MasterSekolahUniversitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -19,7 +20,9 @@ class MasterSekolahUniversitasController extends Controller
     public function index()
     {
         try {
-            $master = MasterSekolahUniversitas::get();
+            $master = Cache::remember('masters_list', 600, function () {
+                return MasterSekolahUniversitas::get();
+            });
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data master berhasil diambil',
@@ -87,12 +90,12 @@ class MasterSekolahUniversitasController extends Controller
                 ])
             );
             $user = Auth::guard('sanctum')->user();
-            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
  
             logActivity($user->id, $nama, 'update', 'Master', $master->id, null);
             
             DB::commit();
-    
+            Cache::forget('masters_list');
             return response()->json([
                 'status' => 'success',
                 'message' => 'Berhasil menambahkan data master',
@@ -113,8 +116,11 @@ class MasterSekolahUniversitasController extends Controller
      */
     public function show(string $id)
     {
-        try {
-            $master = MasterSekolahUniversitas::find($id);
+        try { 
+            $cacheKey = "master_{$id}";
+            $master = Cache::remember($cacheKey, 600, function () use ($id) {
+                return MasterSekolahUniversitas::find($id);
+            });
             if (!$master) {
                 return response()->json([
                     'status' => 'error',
@@ -194,7 +200,7 @@ class MasterSekolahUniversitasController extends Controller
             $newData = $master->toArray(); 
 
             $user = Auth::guard('sanctum')->user();
-            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
  
              logActivity($user->id, $nama, 'update', 'Master', $master->id, [
                  'old' => $oldData,
@@ -203,6 +209,9 @@ class MasterSekolahUniversitasController extends Controller
 
             DB::commit();
     
+            Cache::forget('masters_list');
+            Cache::forget("master_{$id}"); 
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Berhasil mengupdate data master', 
@@ -235,11 +244,12 @@ class MasterSekolahUniversitasController extends Controller
             $master->delete(); 
 
             $user = Auth::guard('sanctum')->user();
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'MasterSekolahUniversitas', $user->id, [
                 'old' => $oldData,
             ]);
-
+            Cache::forget('masters_list');
+            Cache::forget("master_{$id}"); 
         return response()->json([
             'status' => 'success',
             'message' => 'Data master berhasil dihapus', 

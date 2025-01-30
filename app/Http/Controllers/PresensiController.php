@@ -6,6 +6,7 @@ use App\Models\LaporanHarian;
 use App\Models\Presensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -17,7 +18,10 @@ class PresensiController extends Controller
     public function index(){
         try {
             $userId = Auth::guard('sanctum')->user()->id;
-            $presensi = Presensi::where('user_id', $userId)->with('laporanHarians')->get(); 
+            $presensi = Cache::remember("presensi_user_{$userId}", 600, function () use ($userId) {
+                return Presensi::where('user_id', $userId)->with('laporanHarians')->get();
+            });
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data user berhasil diambil',
@@ -65,7 +69,7 @@ class PresensiController extends Controller
             $fotoCheckOutPath = 'presensi/' . $fotoCheckOut->getClientOriginalName();
             Storage::put($fotoCheckOutPath, file_get_contents($fotoCheckOut->getRealPath()));
 
-            $user = Auth::guard('sanctum')->user()->id;
+            $user = Auth::guard('sanctum')->user();
 
             $presensi = Presensi::create([
                 'user_id' => $user->id,
@@ -81,9 +85,11 @@ class PresensiController extends Controller
                 'status' => $request->status
             ]);
     
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'create', 'Presensi', $presensi->id, null);
-    
+     
+              Cache::forget("presensi_user_{$user->id}");  
+               
             DB::commit();
             return response()->json([
                 'message' => 'Presensi berhasil',
@@ -130,9 +136,9 @@ class PresensiController extends Controller
                 'foto' => $fotoLaporanPath,  
             ]);
     
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'create', 'LaporanHarian', $laporan->id, null);
-    
+            Cache::forget("presensi_user_{$user->id}");  
             DB::commit();
             return response()->json([
                 'message' => 'Laporan berhasil disimpan',

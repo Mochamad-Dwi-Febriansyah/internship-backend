@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +22,9 @@ class UserController extends Controller
     public function index()
     {
         try {
-            $users = User::where('role', 'user')->get();
+            $users = Cache::remember('users_list', 600, function () {
+                return User::where('role', 'user')->get();
+            });
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data user berhasil diambil',
@@ -90,11 +94,12 @@ class UserController extends Controller
                 'role' => $request->role
             ]);
             $user = Auth::guard('sanctum')->user();
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'create', 'User', $userCreate->id, null);
 
             DB::commit();
-    
+ 
+            Cache::forget('users_list');
             return response()->json([
                 'status' => 'success',
                 'message' => 'Berhasil menambahkan data user',
@@ -117,7 +122,10 @@ class UserController extends Controller
     public function show(string $id)
     {
         try {
-            $user = User::find($id);
+            $cacheKey = "user_{$id}";
+            $user = Cache::remember($cacheKey, 600, function () use ($id) {
+                return User::find($id);
+            });
             if (!$user) {
                 return response()->json([
                     'status' => 'error',
@@ -202,13 +210,16 @@ class UserController extends Controller
                 'role' => $request->role
             ]);
             $newData = $user->toArray();
-            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
 
             logActivity($user->id, $nama, 'update', 'User', $user->id, [
                 'old' => $oldData,
                 'new' => $newData,
             ]);
             DB::commit();
+
+            Cache::forget('users_list');
+            Cache::forget("user_{$id}");
     
             return response()->json([
                 'status' => 'success',
@@ -243,10 +254,13 @@ class UserController extends Controller
             $oldData = $user->toArray();
             $user->delete();
             $user = Auth::guard('sanctum')->user();
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'User', $user->id, [
                 'old' => $oldData,
             ]);
+
+            Cache::forget('users_list');
+            Cache::forget("user_{$id}");
             
         return response()->json([
             'status' => 'success',

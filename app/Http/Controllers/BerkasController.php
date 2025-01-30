@@ -6,6 +6,7 @@ use App\Models\Berkas;
 use App\Models\MasterSekolahUniversitas;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -222,4 +223,100 @@ class BerkasController extends Controller
         }
        
     }
+
+    // admin 
+    public function index()
+    {
+        try {
+            $berkas = Berkas::get();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data berkas berhasil diambil',
+                'data' => $berkas
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $th->getMessage()
+            ], 500);
+        } 
+    }
+
+    public function show(string $id)
+    {
+        try {
+            $berkas = Berkas::find($id);
+            if (!$berkas) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Berkas tidak ditemukan'
+                ], 404);  // Kode status 404, karena data tidak ditemukan
+            }
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data berkas berhasil diambil',
+                'data' => $berkas
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $th->getMessage()
+            ], 500);
+        } 
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $berkas = Berkas::find($id);
+        if (!$berkas) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Berkas tidak ditemukan'
+            ], 404);  
+        }
+        $oldData = $berkas->toArray(); 
+        $berkasValidator = Validator::make($request->all(), [ 
+            'status' => 'required|in:terima,pending,tolak',  
+            
+        ]); 
+        if($berkasValidator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $berkasValidator->errors()
+            ], 422);
+        } 
+
+        DB::beginTransaction();
+        try {
+            $berkas->update([ 
+                'status' => $request->status
+            ]);
+            $newData = $berkas->toArray();
+            $user = Auth::guard('sanctum')->user();
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
+
+            logActivity($berkas->id, $nama, 'update', 'User', $berkas->id, [
+                'old' => $oldData,
+                'new' => $newData,
+            ]);
+            DB::commit();
+    
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil mengupdate data user', 
+            ], 201);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengupdate data',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
 }

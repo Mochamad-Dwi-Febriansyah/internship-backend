@@ -17,6 +17,8 @@ class LaporanAkhirController extends Controller
     /**
      * Display a listing of the resource.
      */
+
+     // users 
     public function index()
     {
         try {
@@ -90,7 +92,7 @@ class LaporanAkhirController extends Controller
                 'video' => $request->video,
             ]);
             
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'create', 'LaporanAkhir', $laporanAkhir->id, null);
 
 
@@ -200,7 +202,7 @@ class LaporanAkhirController extends Controller
             ]);
 
             $newData = $laporanAkhir->toArray();
-            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
 
             logActivity($user->id, $nama, 'update', 'LaporanAkhir', $laporanAkhir->id, [
                 'old' => $oldData,
@@ -240,7 +242,7 @@ class LaporanAkhirController extends Controller
             $oldData = $laporanAkhir->toArray();
             $laporanAkhir->delete();
             $user = Auth::guard('sanctum')->user();
-            $nama = $user->nama_depan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'LaporanAkhir', $laporanAkhir->id, [
                 'old' => $oldData,
             ]);

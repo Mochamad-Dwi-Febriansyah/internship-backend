@@ -47,7 +47,7 @@ class AuthController extends Controller
     } catch (\Throwable $th) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Terjadi kesalahan saat memperbarui data',
+            'message' => 'Terjadi kesalahan saat login',
             'error' => $th->getMessage()
         ], 500);
     }
@@ -105,7 +105,7 @@ class AuthController extends Controller
                 'kode_pos' => $request->kode_pos,
             ]);
             $newData = $user->toArray();
-            $nama = $user->namadepan . ' ' . $user->nama_belakang;
+            $nama = $user->nama_depan. ' ' .$user->nama_belakang;
 
             logActivity($user->id, $nama, 'update', 'User', $user->id, [
                 'old' => $oldData,
@@ -141,7 +141,7 @@ class AuthController extends Controller
     } catch (\Throwable $th) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Terjadi kesalahan saat memperbarui data',
+            'message' => 'Terjadi kesalahan saat logout',
             'error' => $th->getMessage()
         ], 500);
     }
