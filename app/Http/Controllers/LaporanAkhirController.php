@@ -242,6 +242,7 @@ class LaporanAkhirController extends Controller
             $oldData = $laporanAkhir->toArray();
             $laporanAkhir->delete();
             $user = Auth::guard('sanctum')->user();
+
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'LaporanAkhir', $laporanAkhir->id, [
                 'old' => $oldData,

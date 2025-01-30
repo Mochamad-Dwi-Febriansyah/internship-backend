@@ -211,7 +211,6 @@ class UserController extends Controller
             ]);
             $newData = $user->toArray();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
-
             logActivity($user->id, $nama, 'update', 'User', $user->id, [
                 'old' => $oldData,
                 'new' => $newData,
