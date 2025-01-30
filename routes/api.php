@@ -33,7 +33,7 @@ Route::prefix('v1')->group(function () {
         });
  
 
-        // admin side 
+        // admin side d
 
         //user side
     }); 
