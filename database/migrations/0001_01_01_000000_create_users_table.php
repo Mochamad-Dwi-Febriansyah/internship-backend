@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('nisn_npm_nim', 20)->nullable()->index();
             $table->date('tanggal_lahir');
             $table->enum('jenis_kelamin', ['male', 'female']);
-            $table->string('nomor_hp', 20)->unique();
+            $table->string('nomor_hp', 20);
             $table->string('email')->unique();
             $table->string('password')->nullable();
             $table->text('alamat');

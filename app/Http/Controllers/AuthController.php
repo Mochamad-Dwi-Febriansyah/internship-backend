@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 use function App\Providers\logActivity;
 
@@ -30,20 +34,43 @@ class AuthController extends Controller
             ],422);
         }
 
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password, 'status' => 'inactive'])) {
-            $token = $request->user()->createToken('myAppToken')->plainTextToken;
+
+        // Cek kredensial user
+        if (! $token = JWTAuth::attempt(['email' => $request->email, 'password' => $request->password])) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Login berhasil',
-                'token' => $token
-            ], 200); 
+                'status' => 'error',
+                'message' => 'Login gagal',
+                'error' => 'Email atau password salah'
+            ], 401);
         }
 
+        // Ambil user yang sedang login
+        $user = Auth::user();
+
+        // Cek apakah user masih "inactive"
+        if ($user->status === 'inactive') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun belum aktif. Silakan hubungi admin.'
+            ], 403);
+        } 
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Login berhasil', 
+            'user' => [
+                'id' => $user->id,
+                'nama_depan' => $user->nama_depan,
+                'nama_belakang' => $user->nama_belakang,
+                'email' => $user->email
+            ],
+            'token' => $token,
+        ], 200);
+    } catch (JWTException $e) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Login gagal',
-            'error' => 'Email atau password salah'
-        ], 401);
+            'message' => 'Gagal membuat token',
+            'error' => $e->getMessage()
+        ], 500);
     } catch (\Throwable $th) {
         return response()->json([
             'status' => 'error',
@@ -127,12 +154,54 @@ class AuthController extends Controller
             ], 500);
         }
         
+   } 
+   
+   public function getUser()
+   {
+       try {
+           // Ambil user dari token
+           $user = JWTAuth::parseToken()->authenticate();
+   
+           if (! $user) {
+               return response()->json([
+                   'status' => 'error',
+                   'message' => 'User tidak ditemukan'
+               ], 404);
+           }
+   
+           return response()->json([
+               'status' => 'success',
+               'message' => 'User berhasil ditemukan',
+               'user' => $user
+           ], 200);
+       } catch (TokenExpiredException $e) {
+           return response()->json([
+               'status' => 'error',
+               'message' => 'Token telah kedaluwarsa'
+           ], 401);
+       } catch (TokenInvalidException $e) {
+           return response()->json([
+               'status' => 'error',
+               'message' => 'Token tidak valid'
+           ], 401);
+       } catch (JWTException $e) {
+           return response()->json([
+               'status' => 'error',
+               'message' => 'Token tidak ditemukan'
+           ], 401);
+       } catch (\Throwable $th) {
+           return response()->json([
+               'status' => 'error',
+               'message' => 'Terjadi kesalahan saat mengambil data user',
+               'error' => $th->getMessage()
+           ], 500);
+       }
    }
+   
 
    public function logout(Request $request){    
     try {
-        $user = Auth::guard('sanctum')->user();
-        $user->currentAccessToken()->delete(); // merah tapi bisa 
+        JWTAuth::invalidate(JWTAuth::getToken());
 
         return response()->json([
             'status' => 'success',
