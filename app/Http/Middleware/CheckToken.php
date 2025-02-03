@@ -6,6 +6,10 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class CheckToken
 {
@@ -16,29 +20,48 @@ class CheckToken
      */
     public function handle(Request $request, Closure $next): Response
     {
-         // Cek jika token ada di header
-         if (!$request->bearerToken()) {
-            return response()->json([
-                'message' => 'Token tidak ditemukan'
-            ], 401);
-        }
-
-        // Validasi token dengan Sanctum
         try {
-            // Menggunakan token untuk memverifikasi akses
-            $user = Auth::guard('sanctum')->user();
-            // dd($user);
-            if (!$user) {
+            // Cek apakah token tersedia dalam request
+            if (!$request->bearerToken()) {
                 return response()->json([
-                    'message' => 'Token tidak valid atau telah kadaluarsa'
+                    'status' => 'error',
+                    'message' => 'Token tidak ditemukan'
                 ], 401);
             }
-        } catch (\Exception $e) {
+
+            // Ambil user berdasarkan token
+            $user = JWTAuth::parseToken()->authenticate();
+
+            // Jika user tidak ditemukan
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Token valid, tetapi user tidak ditemukan'
+                ], 401);
+            }
+        } catch (TokenExpiredException $e) {
             return response()->json([
+                'status' => 'error',
+                'message' => 'Token telah kedaluwarsa'
+            ], 401);
+        } catch (TokenInvalidException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token tidak valid'
+            ], 401);
+        } catch (JWTException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token tidak ditemukan atau tidak bisa diproses'
+            ], 401);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
                 'message' => 'Terjadi kesalahan saat memverifikasi token',
-                'error' => $e->getMessage()
+                'error' => $th->getMessage()
             ], 500);
         }
+
 
         // Lanjutkan ke proses berikutnya jika token valid
         return $next($request);

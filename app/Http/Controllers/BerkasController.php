@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 use function App\Providers\logActivity;
 
@@ -91,7 +92,7 @@ class BerkasController extends Controller
                 'jurusan_sekolah' => $request->jurusan_sekolah,
                 'fakultas_universitas' => $request->fakultas_universitas,
                 'program_studi_universitas' => $request->program_studi_universitas,
-                ], 
+                ],
                 $request->only([
                     'nama_sekolah_universitas',
                     'alamat_sekolah_universitas',
@@ -118,7 +119,9 @@ class BerkasController extends Controller
                 'provinsi' => $request->provinsi,
                 'kode_pos' => $request->kode_pos,
                 'role' => $request->role
-            ]);
+            ]); 
+            $token = JWTAuth::fromUser($user); 
+            
             logActivity(null, null, 'create', 'User', $user->id, null);
             // dd($user);
 
@@ -167,7 +170,8 @@ class BerkasController extends Controller
                     'user' => $user,
                     'master_sekolah' => $masterSekolah,
                     'berkas' => $berkas
-                ]
+                ],
+                'token' => $token
             ], 201);
 
         } catch (\Throwable $th) {
