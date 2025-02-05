@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\CheckToken;
 use App\Http\Middleware\IsAdmin;
+use App\Http\Middleware\IsKepegawaian;
+use App\Http\Middleware\IsMentor;
 use App\Http\Middleware\IsUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'cekToken' => CheckToken::class,
             'isAdmin' => IsAdmin::class,
             'isUser' => IsUser::class,
+            'isMentor' => IsMentor::class,
+            'isKepegawaian' => IsKepegawaian::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

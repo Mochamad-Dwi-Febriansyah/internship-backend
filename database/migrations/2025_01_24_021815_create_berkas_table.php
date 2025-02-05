@@ -21,10 +21,12 @@ return new class extends Migration
             $table->uuid('master_sekolah_universitas_id');
             $table->foreign('master_sekolah_universitas_id')->references('id')->on('master_sekolah_universitas')->onDelete('cascade');
 
+            $table->uuid('mentor_id')->nullable();
+            $table->foreign('mentor_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->string('nomor_registrasi', 50)->unique();
             $table->string('foto_identitas', 255);
-            $table->string('surat_permohonan', 255);
-            $table->string('cv_riwayat_hidup', 255);
+            $table->string('surat_permohonan', 255); 
             $table->string('surat_diterima', 255)->nullable();
             $table->enum('status_berkas', ['terima', 'pending', 'tolak'])->default('pending');
             $table->date('tanggal_mulai');

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 use function App\Providers\logActivity;
 
@@ -38,14 +39,7 @@ class UserController extends Controller
             ], 500);
         } 
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        
-    }
+ 
 
     /**
      * Store a newly created resource in storage.
@@ -93,7 +87,7 @@ class UserController extends Controller
                 'kode_pos' => $request->kode_pos,
                 'role' => $request->role
             ]);
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'create', 'User', $userCreate->id, null);
 
@@ -144,15 +138,7 @@ class UserController extends Controller
                 'error' => $th->getMessage()
             ], 500);
         } 
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+    } 
 
     /**
      * Update the specified resource in storage.
@@ -253,7 +239,7 @@ class UserController extends Controller
 
             $oldData = $user->toArray();
             $user->delete();
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'User', $user->id, [
                 'old' => $oldData,
@@ -273,5 +259,65 @@ class UserController extends Controller
                 'error' => $th->getMessage()
             ], 500);
         } 
+    }
+
+    // mentor
+    public function userMagangByMentor(){
+        try {
+            $mentorId = JWTAuth::parseToken()->authenticate()->id;
+             $users = User::whereIn('id', function($query) use ($mentorId){
+                $query->select('user_id')->from('berkas')->where('mentor_id', $mentorId);
+             })->where('role', 'user')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data user berhasil diambil',
+                'data' => $users
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    //kepegawaian 
+     public function userMagang(){
+        try { 
+             $users = User::whereIn('id', function($query){
+                $query->select('user_id')->from('berkas')->where('status_berkas', 'terima');
+             })->where('role', 'user')->where('status', 'active')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data user berhasil diambil',
+                'data' => $users
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+     public function userMentor(){
+        try {
+            $users = User::where('role', 'mentor')->where('status', 'active')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data user berhasil diambil',
+                'data' => $users
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $th->getMessage()
+            ], 500);
+        }
     }
 }

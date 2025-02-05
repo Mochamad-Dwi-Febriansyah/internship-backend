@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 use function App\Providers\logActivity;
 
@@ -23,8 +24,8 @@ class LaporanAkhirController extends Controller
     {
         try {
 
-            $userId = Auth::guard('sanctum')->user()->id;
-            $laporanAkhir = LaporanAkhir::where('user_id', $userId)->get();
+            $user = JWTAuth::parseToken()->authenticate();
+            $laporanAkhir = LaporanAkhir::where('user_id', $user->id)->get();
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data user berhasil diambil',
@@ -38,14 +39,7 @@ class LaporanAkhirController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+ 
 
     /**
      * Store a newly created resource in storage.
@@ -79,7 +73,7 @@ class LaporanAkhirController extends Controller
                 $fileLaporanPath = 'file_laporan/' . $fileLaporan->getClientOriginalName();
                 Storage::put($fileLaporanPath, file_get_contents($fileLaporan->getRealPath()));
             };
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
 
             $laporanAkhir = LaporanAkhir::create([
                 'user_id' => $user->id,
@@ -139,14 +133,7 @@ class LaporanAkhirController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+ 
 
     /**
      * Update the specified resource in storage.
@@ -188,7 +175,7 @@ class LaporanAkhirController extends Controller
                 Storage::put($fileLaporanPath, file_get_contents($fileLaporan->getRealPath()));
             };
 
-            $user = Auth::guard('sanctum')->user(); 
+            $user = JWTAuth::parseToken()->authenticate(); 
 
             $laporanAkhir->update([
                 'user_id' => $user->id,
@@ -241,7 +228,7 @@ class LaporanAkhirController extends Controller
             }
             $oldData = $laporanAkhir->toArray();
             $laporanAkhir->delete();
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'LaporanAkhir', $laporanAkhir->id, [
                 'old' => $oldData,

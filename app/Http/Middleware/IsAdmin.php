@@ -6,6 +6,8 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class IsAdmin
 {
@@ -17,16 +19,19 @@ class IsAdmin
     public function handle(Request $request, Closure $next): Response
     {
         try { 
-            if(Auth::guard('sanctum')->user() && Auth::guard('sanctum')->user()->role === 'admin'){
+            $user = JWTAuth::parseToken()->authenticate();
+             
+            if ($user && $user->role === 'admin') {
                 return $next($request);
             }
-            return response()->json(['message' => 'Unauthorized'], 403); 
-        } catch (\Throwable $th) {
+
+            return response()->json(['message' => 'Unauthorized'], 403);
+        } catch (JWTException $e) {
             return response()->json([
                 'message' => 'Terjadi kesalahan saat memverifikasi token',
-                'error' => $th->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
-      
+ 
     }
 }

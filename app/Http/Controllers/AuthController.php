@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Berkas;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,8 +45,21 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Ambil user yang sedang login
         $user = Auth::user();
+
+        // Cek apakah user memiliki berkas dengan status 'approved'
+        $berkasApproved = Berkas::where('user_id', $user->id)
+                                ->where('status_berkas', 'terima')
+                                ->exists();
+
+        if (! $berkasApproved) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Login gagal',
+                'error' => 'Berkas belum disetujui'
+            ], 403);
+        }
+ 
 
         // Cek apakah user masih "inactive"
         if ($user->status === 'inactive') {
@@ -174,22 +188,7 @@ class AuthController extends Controller
                'message' => 'User berhasil ditemukan',
                'user' => $user
            ], 200);
-       } catch (TokenExpiredException $e) {
-           return response()->json([
-               'status' => 'error',
-               'message' => 'Token telah kedaluwarsa'
-           ], 401);
-       } catch (TokenInvalidException $e) {
-           return response()->json([
-               'status' => 'error',
-               'message' => 'Token tidak valid'
-           ], 401);
-       } catch (JWTException $e) {
-           return response()->json([
-               'status' => 'error',
-               'message' => 'Token tidak ditemukan'
-           ], 401);
-       } catch (\Throwable $th) {
+       }  catch (\Throwable $th) {
            return response()->json([
                'status' => 'error',
                'message' => 'Terjadi kesalahan saat mengambil data user',

@@ -16,13 +16,15 @@ class Berkas extends Model
         'surat_permohonan',
         'cv_riwayat_hidup',
         'surat_diterima',
-        'status_berkas'
+        'status_berkas',
+        'tanggal_mulai',
+        'tanggal_selesai',
     ];
 
     protected static function booted()
     {
         static::creating(function ($berkas) {
-            $berkas->nomor_registrasi = 'BERKAS-' . now()->format('Ymd') . '-' . strtoupper(uniqid());
+            $berkas->nomor_registrasi = 'BR-' . now()->format('ymd') . '-' . strtoupper(substr(uniqid(), -4));
         });
     }
 }
