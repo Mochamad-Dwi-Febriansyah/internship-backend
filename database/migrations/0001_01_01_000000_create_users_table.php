@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('kabupaten_kota', 100);
             $table->string('provinsi', 100);
             $table->string('kode_pos', 100); 
-            $table->enum('role', ['admin', 'user'])->default('user');
+            $table->enum('role', ['admin', 'user', 'mentor', 'kepegawaian'])->default('user');
             $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->rememberToken();
             $table->timestamps();

@@ -4,12 +4,11 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-class IsUser
+class IsMentor
 {
     /**
      * Handle an incoming request.
@@ -20,8 +19,7 @@ class IsUser
     {
         try { 
             $user = JWTAuth::parseToken()->authenticate();
-             
-            if ($user && $user->role === 'user') {
+            if ($user && $user->role === 'mentor') {
                 return $next($request);
             }
 

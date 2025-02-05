@@ -25,7 +25,7 @@ class BerkasController extends Controller
             'nama_depan' => 'required',
             'nama_belakang' => 'nullable',
             'jenis_kelamin' => 'required|in:male,female',
-            'nomor_hp' => 'required|unique:users,nomor_hp|regex:/^\+?[\d\s\(\)-]+$/',
+            'nomor_hp' => 'required|regex:/^\+?[\d\s\(\)-]+$/',
             'email' => 'required|email|unique:users,email',
             'password' => 'nullable',
             'alamat' => 'required',
@@ -67,10 +67,8 @@ class BerkasController extends Controller
 
         $berkasValidator = Validator::make($request->all(), [
             'foto_identitas' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'surat_permohonan' => 'required|mimes:pdf,doc,docx|max:2048',
-            'cv_riwayat_hidup' => 'required|mimes:pdf,doc,docx|max:2048',
-            'surat_diterima' => 'nullable|mimes:pdf,doc,docx|max:2048',
-            'status_berkas' => 'required|in:terima,pending,tolak',
+            'surat_permohonan' => 'required|mimes:pdf,doc,docx|max:2048', 
+            'surat_diterima' => 'nullable|mimes:pdf,doc,docx|max:2048', 
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date',
         ]);
@@ -132,11 +130,7 @@ class BerkasController extends Controller
 
             $suratPermohonan = $request->file('surat_permohonan');
             $suratPermohonanPath = 'berkas/' . $suratPermohonan->getClientOriginalName();
-            Storage::put($suratPermohonanPath, file_get_contents($suratPermohonan->getRealPath()));
-
-            $cvRiwayatHidup = $request->file('cv_riwayat_hidup');
-            $cvRiwayatHidupPath = 'berkas/' . $cvRiwayatHidup->getClientOriginalName();
-            Storage::put($cvRiwayatHidupPath, file_get_contents($cvRiwayatHidup->getRealPath()));
+            Storage::put($suratPermohonanPath, file_get_contents($suratPermohonan->getRealPath())); 
 
             $suratDiterimaPath = null;
             if ($request->hasFile('surat_diterima')) {
@@ -144,16 +138,15 @@ class BerkasController extends Controller
                 $suratDiterimaPath = 'berkas/' . $suratDiterima->getClientOriginalName();
                 Storage::put($suratDiterimaPath, file_get_contents($suratDiterima->getRealPath()));
             }
+            // dd($request->tanggal_mulai);
  
              // Menyimpan data Berkas
              $berkas = Berkas::create([
                  'user_id' => $user->id,
                  'master_sekolah_universitas_id' => $masterSekolah->id,
                  'foto_identitas' => $fotoIdentitasPath,
-                 'surat_permohonan' => $suratPermohonanPath,
-                 'cv_riwayat_hidup' => $cvRiwayatHidupPath,
-                 'surat_diterima' => $suratDiterimaPath,
-                 'status_berkas' => $request->status_berkas ?? 'pending',
+                 'surat_permohonan' => $suratPermohonanPath, 
+                 'surat_diterima' => $suratDiterimaPath, 
                  'tanggal_mulai' => $request->tanggal_mulai,
                  'tanggal_selesai' => $request->tanggal_selesai,
              ]);
@@ -298,8 +291,8 @@ class BerkasController extends Controller
             $berkas->update([ 
                 'status' => $request->status
             ]);
-            $newData = $berkas->toArray();
-            $user = Auth::guard('sanctum')->user();
+            $newData = $berkas->toArray(); 
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
 
             logActivity($berkas->id, $nama, 'update', 'User', $berkas->id, [

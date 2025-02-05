@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 use function App\Providers\logActivity;
 
@@ -35,16 +36,7 @@ class MasterSekolahUniversitasController extends Controller
                 'error' => $th->getMessage()
             ], 500);
         } 
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
+    } 
     /**
      * Store a newly created resource in storage.
      */
@@ -89,7 +81,7 @@ class MasterSekolahUniversitasController extends Controller
                     'email_sekolah_universitas',
                 ])
             );
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
  
             logActivity($user->id, $nama, 'update', 'Master', $master->id, null);
@@ -140,14 +132,7 @@ class MasterSekolahUniversitasController extends Controller
             ], 500);
         } 
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+ 
 
     /**
      * Update the specified resource in storage.
@@ -199,7 +184,7 @@ class MasterSekolahUniversitasController extends Controller
             ]); 
             $newData = $master->toArray(); 
 
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
  
              logActivity($user->id, $nama, 'update', 'Master', $master->id, [
@@ -243,7 +228,7 @@ class MasterSekolahUniversitasController extends Controller
             $oldData = $master->toArray(); 
             $master->delete(); 
 
-            $user = Auth::guard('sanctum')->user();
+            $user = JWTAuth::parseToken()->authenticate();
             $nama = $user->nama_depan. ' ' .$user->nama_belakang;
             logActivity($user->id, $nama, 'delete', 'MasterSekolahUniversitas', $user->id, [
                 'old' => $oldData,
